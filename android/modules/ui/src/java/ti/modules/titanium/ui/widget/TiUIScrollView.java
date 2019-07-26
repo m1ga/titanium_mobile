@@ -6,24 +6,6 @@
  */
 package ti.modules.titanium.ui.widget;
 
-import java.util.HashMap;
-
-import org.appcelerator.kroll.KrollDict;
-import org.appcelerator.kroll.KrollProxy;
-import org.appcelerator.kroll.common.Log;
-import org.appcelerator.titanium.TiC;
-import org.appcelerator.titanium.TiDimension;
-import org.appcelerator.titanium.proxy.TiViewProxy;
-import org.appcelerator.titanium.util.TiConvert;
-import org.appcelerator.titanium.util.TiRHelper;
-import org.appcelerator.titanium.TiBaseActivity;
-import org.appcelerator.titanium.view.TiCompositeLayout;
-import org.appcelerator.titanium.view.TiCompositeLayout.LayoutArrangement;
-import org.appcelerator.titanium.view.TiUIView;
-import org.xmlpull.v1.XmlPullParser;
-
-import ti.modules.titanium.ui.RefreshControlProxy;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.os.Build;
@@ -40,6 +22,21 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.HorizontalScrollView;
+import java.util.HashMap;
+import org.appcelerator.kroll.KrollDict;
+import org.appcelerator.kroll.KrollProxy;
+import org.appcelerator.kroll.common.Log;
+import org.appcelerator.titanium.TiBaseActivity;
+import org.appcelerator.titanium.TiC;
+import org.appcelerator.titanium.TiDimension;
+import org.appcelerator.titanium.proxy.TiViewProxy;
+import org.appcelerator.titanium.util.TiConvert;
+import org.appcelerator.titanium.util.TiRHelper;
+import org.appcelerator.titanium.view.TiCompositeLayout;
+import org.appcelerator.titanium.view.TiCompositeLayout.LayoutArrangement;
+import org.appcelerator.titanium.view.TiUIView;
+import org.xmlpull.v1.XmlPullParser;
+import ti.modules.titanium.ui.RefreshControlProxy;
 
 public class TiUIScrollView extends TiUIView
 {
@@ -347,6 +344,33 @@ public class TiUIScrollView extends TiUIView
 	{
 		private TiScrollViewLayout layout;
 
+		private long lastScrollUpdate = -1;
+
+		private class ScrollStateHandler implements Runnable
+		{
+			@Override
+			public void run()
+			{
+				long currentTime = System.currentTimeMillis();
+				if ((currentTime - lastScrollUpdate) > 100) {
+					lastScrollUpdate = -1;
+					onScrollEnd();
+				} else {
+					postDelayed(this, 100);
+				}
+			}
+		}
+
+		private void onScrollStart()
+		{
+			getProxy().fireEvent(TiC.EVENT_SCROLLSTART, new KrollDict());
+		}
+
+		private void onScrollEnd()
+		{
+			getProxy().fireEvent(TiC.EVENT_SCROLLEND, new KrollDict());
+		}
+
 		public TiVerticalScrollView(Context context, LayoutArrangement arrangement)
 		{
 			super(context, getAttributeSet(context, verticalAttrId));
@@ -453,6 +477,13 @@ public class TiUIScrollView extends TiUIView
 			data.put(TiC.EVENT_PROPERTY_Y, t);
 			setContentOffset(l, t);
 			getProxy().fireEvent(TiC.EVENT_SCROLL, data);
+
+			if (lastScrollUpdate == -1) {
+				onScrollStart();
+				postDelayed(new ScrollStateHandler(), 100);
+			}
+
+			lastScrollUpdate = System.currentTimeMillis();
 		}
 
 		@Override
@@ -584,6 +615,13 @@ public class TiUIScrollView extends TiUIView
 			data.put(TiC.EVENT_PROPERTY_Y, t);
 			setContentOffset(l, t);
 			getProxy().fireEvent(TiC.EVENT_SCROLL, data);
+
+			if (lastScrollUpdate == -1) {
+				onScrollStart();
+				postDelayed(new ScrollStateHandler(), 100);
+			}
+
+			lastScrollUpdate = System.currentTimeMillis();
 		}
 
 		@Override
@@ -708,6 +746,33 @@ public class TiUIScrollView extends TiUIView
 			} else {
 				super.stopNestedScroll();
 			}
+		}
+
+		private long lastScrollUpdate = -1;
+
+		private class ScrollStateHandler implements Runnable
+		{
+			@Override
+			public void run()
+			{
+				long currentTime = System.currentTimeMillis();
+				if ((currentTime - lastScrollUpdate) > 100) {
+					lastScrollUpdate = -1;
+					onScrollEnd();
+				} else {
+					postDelayed(this, 100);
+				}
+			}
+		}
+
+		private void onScrollStart()
+		{
+			getProxy().fireEvent(TiC.EVENT_SCROLLSTART, new KrollDict());
+		}
+
+		private void onScrollEnd()
+		{
+			getProxy().fireEvent(TiC.EVENT_SCROLLEND, new KrollDict());
 		}
 	}
 

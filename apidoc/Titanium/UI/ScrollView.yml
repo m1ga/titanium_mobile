@@ -154,6 +154,16 @@ events:
         summary: Y coordinate of the event from the `source` view's coordinate system.
         type: Number
 
+  - name: scrollend
+    summary: Fired when the view stops scrolling.
+    platforms: [android]
+    since: {android: "8.2.0" }
+
+  - name: scrollstart
+    summary: Fired when the view starts scrolling.
+    platforms: [android]
+    since: {android: "8.2.0" }
+
   - name: dragStart
     summary: Fired when the scrollable region starts being dragged.
     description: |
