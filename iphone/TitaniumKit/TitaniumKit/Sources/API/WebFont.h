@@ -29,7 +29,7 @@
 
 /**
  Provides access to the font family which is the official font name.
- @see http://developer.appcelerator.com/apidoc/mobile/latest/Font-object.html
+ @see https://titaniumsdk.com/api/structs/font.html#overview
  */
 @property (nonatomic, retain) NSString *family;
 

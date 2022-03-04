@@ -182,7 +182,7 @@ Community support and discussion about Titanium is available on Slack at [TiSlac
 
 ### Twitter
 
-Please consider following [@Appcelerator](http://www.twitter.com/appcelerator) and [@AppcDev](https://twitter.com/AppcDev) on Twitter for updates.
+Please consider following [@TitaniumSDK](https://twitter.com/TitaniumSDK) and [@Tidevio](https://twitter.com/tidevio) on Twitter for updates.
 
 ### Commercial Support, Licensing
 
