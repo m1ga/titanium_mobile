@@ -50,6 +50,7 @@ public class ListItemProxy extends TiViewProxy
 	private final List<String> ignoredTemplateKeys = new ArrayList<>();
 
 	public int index;
+	public int itemType;
 
 	private int filteredIndex = -1;
 	private ListViewHolder holder;
@@ -574,6 +575,7 @@ public class ListItemProxy extends TiViewProxy
 		while (!(parent instanceof ListViewProxy) && parent != null) {
 			parent = parent.getParent();
 		}
+
 		return (ListViewProxy) parent;
 	}
 

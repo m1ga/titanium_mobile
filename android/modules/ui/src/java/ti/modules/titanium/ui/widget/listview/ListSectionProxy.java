@@ -122,7 +122,7 @@ public class ListSectionProxy extends TiViewProxy
 		super.setActivity(activity);
 
 		// Update activity of header/footer views.
-		if (hasPropertyAndNotNull(TiC.PROPERTY_HEADER_VIEW)) {
+		/*if (hasPropertyAndNotNull(TiC.PROPERTY_HEADER_VIEW)) {
 			final Object headerObject = getProperty(TiC.PROPERTY_HEADER_VIEW);
 			if (headerObject instanceof TiViewProxy) {
 				final TiViewProxy headerProxy = (TiViewProxy) headerObject;
@@ -136,7 +136,7 @@ public class ListSectionProxy extends TiViewProxy
 				footerProxy.setActivity(activity);
 			}
 		}
-
+*/
 		for (final ListItemProxy item : this.items) {
 			item.setActivity(activity);
 		}

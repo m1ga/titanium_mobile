@@ -18,6 +18,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import org.appcelerator.kroll.KrollDict;
 import org.appcelerator.kroll.annotations.Kroll;
+import org.appcelerator.kroll.common.Log;
 import org.appcelerator.titanium.TiApplication;
 import org.appcelerator.titanium.TiC;
 import org.appcelerator.titanium.TiDimension;
@@ -200,7 +201,8 @@ public class ListViewProxy extends RecyclerViewProxy
 			final int fromIndex = fromItem.getIndexInSection();
 			final ListItemProxy toItem = listView.getAdapterItem(toAdapterIndex);
 			final TiViewProxy parentProxy = toItem.getParent();
-
+			Log.i("---", "To: " + toAdapterIndex + " parent: " + parentProxy.getApiName());
+			// TODO move to last section again
 			if (parentProxy instanceof ListSectionProxy) {
 				final ListSectionProxy toSection = (ListSectionProxy) parentProxy;
 				final int toIndex = Math.max(toItem.getIndexInSection(), 0);

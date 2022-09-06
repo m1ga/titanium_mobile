@@ -26,6 +26,7 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.PaintDrawable;
 import android.os.Build;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.MotionEvent;
 import android.view.View;
@@ -45,45 +46,44 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 	private static final String TAG = "ListViewHolder";
 
 	// Top
-	private final TiCompositeLayout header;
-	private final TextView headerTitle;
+	private TiCompositeLayout header;
+	private TextView headerTitle;
 
 	// Middle
-	private final ViewGroup container;
-	private final ImageView leftImage;
-	private final TiCompositeLayout content;
-	private final ImageView rightImage;
+	private ViewGroup container;
+	private ImageView leftImage;
+	private TiCompositeLayout content;
+	private ImageView rightImage;
 
 	// Bottom
-	private final TiCompositeLayout footer;
-	private final TextView footerTitle;
+	private  TiCompositeLayout footer;
+	private  TextView footerTitle;
 
-	public ListViewHolder(final Context context, final ViewGroup viewGroup)
+	public ListViewHolder(final Context context, final ViewGroup viewGroup, int type)
 	{
 		super(context, viewGroup);
-
-		// Obtain views from identifiers.
-		this.header = viewGroup.findViewById(R.id.titanium_ui_listview_holder_header);
-
-		this.headerTitle = viewGroup.findViewById(R.id.titanium_ui_listview_holder_header_title);
-
-		// Header attributes.
-		setTitleAttributes("header", context, this.headerTitle);
-
-		this.container = viewGroup.findViewById(R.id.titanium_ui_listview_holder_outer_content_container);
-
-		this.leftImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_left_image);
-
-		this.content = viewGroup.findViewById(R.id.titanium_ui_listview_holder_content);
-
-		this.rightImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_right_image);
-
-		this.footer = viewGroup.findViewById(R.id.titanium_ui_listview_holder_footer);
-
-		this.footerTitle = viewGroup.findViewById(R.id.titanium_ui_listview_holder_footer_title);
-
-		// Footer attributes.
-		setTitleAttributes("footer", context, this.footerTitle);
+		Log.i("---", "Header type: " + type);
+		if (type == 1) {
+			// header attributes
+			this.header = viewGroup.findViewById(R.id.titanium_ui_listview_holder_header);
+			this.headerTitle = viewGroup.findViewById(R.id.titanium_ui_listview_holder_header_title);
+			setTitleAttributes("header", context, this.headerTitle);
+			/*this.container = viewGroup.findViewById(R.id.titanium_ui_listview_holder_outer_content_container);
+			this.leftImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_left_image);
+			this.content = viewGroup.findViewById(R.id.titanium_ui_listview_holder_content);
+			this.rightImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_right_image);
+			this.footer = viewGroup.findViewById(R.id.titanium_ui_listview_holder_footer);
+			this.footerTitle = viewGroup.findViewById(R.id.titanium_ui_listview_holder_footer_title);
+			// Footer attributes.
+			setTitleAttributes("footer", context, this.footerTitle);
+			this.footer.setVisibility(View.GONE);
+			this.footerTitle.setVisibility(View.GONE);*/
+		} else {
+			this.container = viewGroup.findViewById(R.id.titanium_ui_listview_holder_outer_content_container);
+			this.leftImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_left_image);
+			this.content = viewGroup.findViewById(R.id.titanium_ui_listview_holder_content);
+			this.rightImage = viewGroup.findViewById(R.id.titanium_ui_listview_holder_right_image);
+		}
 	}
 
 	/**
@@ -94,8 +94,9 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 	 */
 	public void bind(final ListItemProxy proxy, final boolean selected)
 	{
-		reset();
 
+		reset();
+		Log.i("--", "in bind");
 		// Update model proxy holder.
 		this.proxy = new WeakReference<>(proxy);
 		proxy.setHolder(this);
@@ -114,6 +115,12 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 		// Obtain proxy properties.
 		final KrollDict properties = proxy.getProperties();
 
+		if (this.headerTitle != null) {
+			setHeaderFooter(listViewProxy, properties, true, false);
+		}
+		if (this.content == null) {
+			return;
+		}
 		// Set minimum row height.
 		final String rawMinHeight = properties.optString(TiC.PROPERTY_MIN_ROW_HEIGHT, "0");
 		final int minHeight = TiConvert.toTiDimension(rawMinHeight, TiDimension.TYPE_HEIGHT).getAsPixels(itemView);
@@ -264,7 +271,7 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 		if (section == null) {
 
 			// Handle `header` and `footer` for rows without a parent section.
-			setHeaderFooter(listViewProxy, properties, true, true);
+			//setHeaderFooter(listViewProxy, properties, true, true);
 
 		} else {
 
@@ -277,14 +284,14 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 			if (indexInSection == 0 || filteredIndex == 0 || proxy.isPlaceholder()) {
 
 				// Only set header on first row in section.
-				setHeaderFooter(listViewProxy, sectionProperties, true, false);
+				//setHeaderFooter(listViewProxy, sectionProperties, true, false);
 			}
 			if ((indexInSection >= section.getItemCount() - 1)
 				|| (filteredIndex >= section.getFilteredItemCount() - 1)
 				|| proxy.isPlaceholder()) {
 
 				// Only set footer on last row in section.
-				setHeaderFooter(listViewProxy, sectionProperties, false, true);
+				//setHeaderFooter(listViewProxy, sectionProperties, false, true);
 			}
 		}
 	}
@@ -294,14 +301,17 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 	 */
 	private void reset()
 	{
-		this.header.removeAllViews();
+		if (this.content == null) {
+			return;
+		}
+		//this.header.removeAllViews();
 		this.content.removeAllViews();
-		this.footer.removeAllViews();
+		//this.footer.removeAllViews();
 
-		this.header.setVisibility(View.GONE);
-		this.headerTitle.setVisibility(View.GONE);
-		this.footer.setVisibility(View.GONE);
-		this.footerTitle.setVisibility(View.GONE);
+		//this.header.setVisibility(View.GONE);
+		//this.headerTitle.setVisibility(View.GONE);
+		//this.footer.setVisibility(View.GONE);
+		//this.footerTitle.setVisibility(View.GONE);
 		this.content.setVisibility(View.GONE);
 		this.leftImage.setVisibility(View.GONE);
 		this.rightImage.setVisibility(View.GONE);
@@ -330,7 +340,7 @@ public class ListViewHolder extends TiRecyclerViewHolder<ListItemProxy>
 		}
 
 		final Context context = this.itemView.getContext();
-
+		Log.i("---", properties.getString(TiC.PROPERTY_HEADER_TITLE));
 		// Handle `header` and `footer`.
 		if (updateHeader) {
 			if (properties.containsKeyAndNotNull(TiC.PROPERTY_HEADER_TITLE)) {

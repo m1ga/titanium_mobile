@@ -26,6 +26,7 @@ public abstract class TiRecyclerViewAdapter<VH extends TiRecyclerViewHolder<V>, 
 {
 	protected Context context;
 	protected int id_holder;
+	protected int id_holder_header;
 	protected LayoutInflater inflater;
 	protected List<V> models;
 	protected SelectionTracker tracker;
@@ -121,7 +122,6 @@ public abstract class TiRecyclerViewAdapter<VH extends TiRecyclerViewHolder<V>, 
 
 		// Update models.
 		this.models = newModelsClone;
-
 		// Update adapter based on diff.
 		diffResult.dispatchUpdatesTo(this);
 	}

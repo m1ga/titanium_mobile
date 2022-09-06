@@ -87,6 +87,9 @@ public class ItemTouchHandler extends ItemTouchHelper.SimpleCallback
 	private boolean canMove(TiViewProxy holderProxy)
 	{
 		final KrollDict recyclerProperties = this.recyclerViewProxy.getProperties();
+		if (holderProxy == null) {
+			return false;
+		}
 		final KrollDict holderProperties = holderProxy.getProperties();
 
 		if (holderProxy instanceof ListItemProxy) {
@@ -114,6 +117,9 @@ public class ItemTouchHandler extends ItemTouchHelper.SimpleCallback
 	 */
 	private boolean canSwipe(TiViewProxy holderProxy)
 	{
+		if (holderProxy == null) {
+			return false;
+		}
 		String editProperty = TiC.PROPERTY_EDITABLE;
 		if (holderProxy instanceof ListItemProxy) {
 			editProperty = TiC.PROPERTY_CAN_EDIT;

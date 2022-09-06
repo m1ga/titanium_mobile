@@ -686,39 +686,68 @@ public class TiListView extends TiSwipeRefreshLayout implements OnSearchChangeLi
 			final KrollDict sectionProperties = section.getProperties();
 			final List<ListItemProxy> sectionItems = section.getListItems();
 
-			int filteredIndex = 0;
-			for (final ListItemProxy item : sectionItems) {
-
-				// Handle search query.
-				if (query != null) {
-					String searchableText = item.getProperties().optString(TiC.PROPERTY_SEARCHABLE_TEXT, null);
-					if (searchableText != null) {
-						if (caseInsensitive) {
-							searchableText = searchableText.toLowerCase();
-						}
-						if (!searchableText.contains(query)) {
-							continue;
-						}
-					}
-				}
-
-				// Update filtered index of item.
-				item.setFilteredIndex(query != null ? filteredIndex++ : -1);
-
-				// Add item.
-				item.index = index++;
-				this.items.add(item);
-			}
-			filterResultsCount += filteredIndex;
-
-			// Update section filtered row count.
-			section.setFilteredItemCount(query != null ? filteredIndex : -1);
-
 			final boolean sectionHasHeader = sectionProperties.containsKeyAndNotNull(TiC.PROPERTY_HEADER_TITLE)
 				|| sectionProperties.containsKeyAndNotNull(TiC.PROPERTY_HEADER_VIEW);
 			final boolean sectionHasFooter = sectionProperties.containsKeyAndNotNull(TiC.PROPERTY_FOOTER_TITLE)
 				|| sectionProperties.containsKeyAndNotNull(TiC.PROPERTY_FOOTER_VIEW);
 
+			int filteredIndex = 0;
+			int sectionItemCount = 0;
+
+			if (sectionItems.size() == 0) {
+				// no real items in section - still check for header/footer
+				final ListItemProxy headerItem = new ListItemProxy(false);
+				headerItem.index = index++;
+				headerItem.setParent(this.proxy);
+				headerItem.itemType = 1;
+				headerItem.getProperties().put(TiC.PROPERTY_HEADER_TITLE,
+					sectionProperties.get(TiC.PROPERTY_HEADER_TITLE));
+				headerItem.getProperties().put(TiC.PROPERTY_HEADER_VIEW,
+					sectionProperties.get(TiC.PROPERTY_HEADER_VIEW));
+				this.items.add(headerItem);
+			} else {
+				for (final ListItemProxy item : sectionItems) {
+
+					// Handle search query.
+					if (query != null) {
+						String searchableText = item.getProperties().optString(TiC.PROPERTY_SEARCHABLE_TEXT, null);
+						if (searchableText != null) {
+							if (caseInsensitive) {
+								searchableText = searchableText.toLowerCase();
+							}
+							if (!searchableText.contains(query)) {
+								continue;
+							}
+						}
+					}
+
+					if (sectionItemCount == 0 && sectionHasHeader) {
+						// add new item for header
+						final ListItemProxy headerItem = new ListItemProxy(false);
+						headerItem.index = index++;
+						headerItem.setParent(this.proxy);
+						headerItem.itemType = 1;
+						headerItem.getProperties().put(TiC.PROPERTY_HEADER_TITLE,
+							sectionProperties.get(TiC.PROPERTY_HEADER_TITLE));
+						headerItem.getProperties().put(TiC.PROPERTY_HEADER_VIEW,
+							sectionProperties.get(TiC.PROPERTY_HEADER_VIEW));
+						this.items.add(headerItem);
+					}
+
+					sectionItemCount++;
+					// Update filtered index of item.
+					item.setFilteredIndex(query != null ? filteredIndex++ : -1);
+
+					// Add item.
+					item.index = index++;
+					this.items.add(item);
+				}
+			}
+			filterResultsCount += filteredIndex;
+
+			// Update section filtered row count.
+			section.setFilteredItemCount(query != null ? filteredIndex : -1);
+			/*
 			// Allow header and footer to show when no items are present.
 			if ((sectionHasHeader || sectionHasFooter) && sectionItems.size() == 0) {
 				final ListItemProxy item = new ListItemProxy(true);
@@ -735,11 +764,11 @@ public class TiListView extends TiSwipeRefreshLayout implements OnSearchChangeLi
 
 				item.setParent(section);
 				this.items.add(item);
-			}
+			}*/
 		}
 
 		// Add placeholder item for ListView footer.
-		if (hasFooter) {
+		/*if (hasFooter) {
 			final ListItemProxy item = new ListItemProxy(true);
 
 			item.getProperties().put(TiC.PROPERTY_FOOTER_TITLE, properties.get(TiC.PROPERTY_FOOTER_TITLE));
@@ -748,7 +777,7 @@ public class TiListView extends TiSwipeRefreshLayout implements OnSearchChangeLi
 			item.setParent(this.proxy);
 			this.items.add(item);
 		}
-
+*/
 		// If filtered and no results, fire `noresult` event.
 		if (isFiltered() && filterResultsCount == 0) {
 			this.proxy.fireEvent(TiC.EVENT_NO_RESULTS, null);
