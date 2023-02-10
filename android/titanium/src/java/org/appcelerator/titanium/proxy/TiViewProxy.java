@@ -495,10 +495,18 @@ public abstract class TiViewProxy extends KrollProxy
 		// tree. Allows defaults to be added and keys removed.
 		if (children != null) {
 			try {
-				for (TiViewProxy p : children) {
-					TiUIView cv = p.getOrCreateView();
-					view.add(cv);
-				}
+				TiApplication.getAppCurrentActivity().runOnUiThread(new Runnable()
+				{
+					@Override
+					public void run()
+					{
+						for (TiViewProxy p : children) {
+							TiUIView cv = p.getOrCreateView();
+							view.add(cv);
+						}
+					}
+				});
+
 			} catch (ConcurrentModificationException e) {
 				Log.e(TAG, e.getMessage(), e);
 			}
