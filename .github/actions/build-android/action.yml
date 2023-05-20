@@ -65,21 +65,21 @@ runs:
         restore-keys: |
           ${{ runner.os }}-ccache-
 
-    # - name: Cache V8
-    #   uses: actions/cache@v3
-    #   with:
-    #     path: dist/android/libv8
-    #     key: libv8-${{ hashFiles('dist/android/libv8/**') }}
-    #     restore-keys: |
-    #       libv8-
+    - name: Cache V8
+      uses: actions/cache@v3
+      with:
+        path: dist/android/libv8
+        key: libv8-${{ hashFiles('dist/android/libv8/**') }}
+        restore-keys: |
+          libv8-
 
     - name: Build
       run: npm run build:android
       shell: bash
 
-    # - name: Show summary of ccache configuration and statistics counters
-    #   run: ccache --show-stats
-    #   shell: bash
+    - name: Show summary of ccache configuration and statistics counters
+      run: ccache --show-stats
+      shell: bash
 
     - name: 'Package build output'
       run: >
