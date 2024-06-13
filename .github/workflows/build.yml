@@ -22,7 +22,7 @@ jobs:
         uses: ./.github/actions/build-android
         with:
           node-version: '16.x'
-          java-version: '11'
+          java-version: '19'
 
   ios:
     runs-on: macos-13
@@ -84,5 +84,5 @@ jobs:
       uses: ./.github/actions/package
       with:
         node-version: '16.x'
-        java-version: '11'
+        java-version: '19'
         vtag: ${{ env.vtag }}
