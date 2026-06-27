@@ -6,12 +6,14 @@
  */
 #include <cstring>
 #include <string>
+#include <utility>
 
 #include <v8.h>
 #include <jni.h>
 
 #include "AndroidUtil.h"
 #include "EventEmitter.h"
+#include "FastPropertyStore.h"
 #include "JavaObject.h"
 #include "JNIUtil.h"
 #include "JSException.h"
@@ -37,9 +39,117 @@ Persistent<String> Proxy::propertiesSymbol;
 Persistent<String> Proxy::lengthSymbol;
 Persistent<String> Proxy::sourceUrlSymbol;
 
+// ── Fast property store static members ──────────────────────────────────
+std::unordered_set<std::string> Proxy::fastPropertyRegistry_;
+std::set<Proxy*> Proxy::dirtyProxies_;
+
 Proxy::Proxy() :
 	JavaObject()
 {
+}
+
+Proxy::~Proxy()
+{
+	// Unregister from dirty proxies tracking to avoid dangling pointer.
+	dirtyProxies_.erase(this);
+}
+
+// ── Fast property store API ─────────────────────────────────────────────
+
+void Proxy::registerFastProperty(const std::string& propName)
+{
+	fastPropertyRegistry_.insert(propName);
+}
+
+bool Proxy::isFastProperty(const std::string& propName)
+{
+	return fastPropertyRegistry_.find(propName) != fastPropertyRegistry_.end();
+}
+
+bool Proxy::hasDirtyProxies()
+{
+	return !dirtyProxies_.empty();
+}
+
+void Proxy::markProxyDirty(Proxy* proxy)
+{
+	dirtyProxies_.insert(proxy);
+}
+
+void Proxy::flushAllDirtyProxies(JNIEnv* env)
+{
+	if (dirtyProxies_.empty()) {
+		return;
+	}
+	// Iterate a copy of the set since flushDirtyProperties will erase entries.
+	auto proxies = dirtyProxies_;
+	for (auto* proxy : proxies) {
+		proxy->flushDirtyProperties(env);
+	}
+}
+
+bool Proxy::flushDirtyProperties(JNIEnv* env)
+{
+	if (!fastProperties_.hasDirty()) {
+		return false;
+	}
+
+	Isolate* isolate = Isolate::GetCurrent();
+	auto& dirty = fastProperties_.dirtyProperties();
+
+	// Build a Object[][] batch matching the signature of
+	// KrollProxy.onPropertiesChanged(String[][] changes)
+	// where each element is [name, oldValue, newValue].
+	// We pass null for oldValue since we don't track it in C++.
+	jobjectArray jBatch = env->NewObjectArray(
+		static_cast<jsize>(dirty.size()),
+		JNIUtil::objectArrayClass,
+		NULL);
+
+	for (uint32_t i = 0; i < dirty.size(); ++i) {
+		const std::string& propName = dirty[i];
+		v8::HandleScope scope(isolate);
+		Local<Value> val = fastProperties_.get(isolate, propName);
+		if (val.IsEmpty()) {
+			continue;
+		}
+
+		jobjectArray jTriple = env->NewObjectArray(3, JNIUtil::objectClass, NULL);
+
+		Local<String> jNameStr = v8::String::NewFromUtf8(isolate,
+			propName.c_str(), v8::NewStringType::kNormal).ToLocalChecked();
+		jstring jName = TypeConverter::jsStringToJavaString(isolate, env, jNameStr);
+		env->SetObjectArrayElement(jTriple, INDEX_NAME, jName);
+		env->DeleteLocalRef(jName);
+
+		// oldValue = NULL (not tracked)
+		// value at index INDEX_VALUE
+		bool isNew;
+		jobject jVal = TypeConverter::jsValueToJavaObject(isolate, env, val, &isNew);
+		env->SetObjectArrayElement(jTriple, INDEX_VALUE, jVal);
+		if (isNew) env->DeleteLocalRef(jVal);
+
+		env->SetObjectArrayElement(jBatch, i, jTriple);
+		env->DeleteLocalRef(jTriple);
+	}
+
+	jobject javaProxy = getJavaObject();
+	if (javaProxy != NULL) {
+		env->CallVoidMethod(javaProxy,
+			JNIUtil::krollProxyOnPropertiesChangedMethod,
+			jBatch);
+		unreferenceJavaObject(javaProxy);
+	}
+
+	env->DeleteLocalRef(jBatch);
+
+	if (env->ExceptionCheck()) {
+		env->ExceptionClear();
+	}
+
+	fastProperties_.clearDirty();
+	dirtyProxies_.erase(this);
+	return true;
 }
 
 void Proxy::bindProxy(Local<Object> exports, Local<Context> context)
@@ -162,7 +272,30 @@ void Proxy::setProperty(Local<Name> property, Local<Value> value, const Property
 static void onPropertyChangedForProxy(Isolate* isolate, Local<String> property, Local<Value> value, Local<Object> proxyObject)
 {
 	Proxy* proxy = NativeObject::Unwrap<Proxy>(proxyObject);
+	if (!proxy) {
+		return;
+	}
 
+	// Convert the property name to std::string for registry lookups.
+	v8::String::Utf8Value propName(isolate, property);
+	std::string propNameStr(*propName, propName.length());
+
+	// ── FAST PATH: registered fast property ──────────────────────────
+	// Store in C++ only — 0 JNI calls. The V8Runtime::nativeIdle() callback
+	// flushes all dirty proxies to Java in a single batched JNI call.
+	if (Proxy::isFastProperty(propNameStr)) {
+		proxy->fastProperties().set(propNameStr, value);
+		proxy->fastProperties().markDirty(propNameStr);
+
+		// Store in V8 _properties map so JS getProperty works.
+		setPropertyOnProxy(isolate, property, value, proxyObject);
+
+		// Track this proxy for later batch flush.
+		Proxy::markProxyDirty(proxy);
+		return;
+	}
+
+	// ── EXISTING PATH: full JNI route (unchanged) ────────────────────
 	JNIEnv* env = JNIScope::getEnv();
 	if (!env) {
 		LOG_JNIENV_GET_ERROR(TAG);

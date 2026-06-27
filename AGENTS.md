@@ -27,3 +27,7 @@ Follow Conventional Commits (`feat:`, `fix(scope):`, `chore:`); `commitlint` enf
 
 ## Security & Configuration Tips
 Use Node.js `>=20.18.1` (`package.json` `vendorDependencies`). For Android builds, ensure `ANDROID_SDK` is set or pass SDK paths via build command arguments.
+
+## Active Design Plans
+- `docs/plans/2026-02-22-kroll-locking-modernization-design.md` — iOS Kroll locking modernization.
+- `docs/plans/2026-06-27-jsi-cpp-binding-design.md` — JSI C++ fast-path property store (Android/iOS). Implements a C++-authoritative property store inside `titanium::Proxy` to skip JNI for simple property sets/gets, with batched flush to Java. Phases 1–5 detailed with file lists and perf projections.

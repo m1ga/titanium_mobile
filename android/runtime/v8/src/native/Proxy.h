@@ -7,6 +7,11 @@
 #ifndef PROXY_H
 #define PROXY_H
 
+#include <set>
+#include <string>
+#include <unordered_set>
+
+#include "FastPropertyStore.h"
 #include "JavaObject.h"
 #include "V8Util.h"
 
@@ -27,6 +32,33 @@ public:
 	static v8::Persistent<v8::String> lengthSymbol, sourceUrlSymbol;
 
 	Proxy();
+	virtual ~Proxy();
+
+	// ── Fast Property Store ──────────────────────────────────────────────
+
+	// Register a property name whose sets/gets should skip JNI entirely.
+	// Must be called once during proxy type initialization.
+	static void registerFastProperty(const std::string& propName);
+
+	// Returns true if the given property name is registered as "fast".
+	static bool isFastProperty(const std::string& propName);
+
+	// Returns true if there are any proxies with unflushed dirty properties.
+	static bool hasDirtyProxies();
+
+	// Flush all dirty properties to Java for all proxies that have them.
+	// Called from V8Runtime::nativeIdle() or explicitly from Java.
+	static void flushAllDirtyProxies(JNIEnv* env);
+
+	// Access the C++ fast property store for this instance.
+	FastPropertyStore& fastProperties() { return fastProperties_; }
+
+	// Mark this proxy for deferred batch flush to Java.
+	static void markProxyDirty(Proxy* proxy);
+
+	// Push this proxy's dirty properties to Java.
+	// Returns true if any properties were flushed.
+	bool flushDirtyProperties(JNIEnv* env);
 
 	/**
 	 * Initialize the base proxy template
@@ -179,6 +211,17 @@ private:
 	 * @return      The Java object passed within the arguments (first arg, as an External)
 	 */
 	static jobject unwrapJavaProxy(const v8::FunctionCallbackInfo<v8::Value>& args);
+
+	// Per-instance fast property store.
+	FastPropertyStore fastProperties_;
+
+	// Global registry of "fast" property names (shared across all proxy types).
+	static std::unordered_set<std::string> fastPropertyRegistry_;
+
+	// Set of proxy instances with dirty properties needing a Java flush.
+	static std::set<Proxy*> dirtyProxies_;
+
+
 };
 
 }

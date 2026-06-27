@@ -59,6 +59,7 @@ add_library(
 	# Relative paths to all source C/C++ files.
 	AndroidUtil.cpp
 	EventEmitter.cpp
+	FastPropertyStore.cpp
 	InspectorClient.cpp
 	InspectorFrontend.cpp
 	JavaObject.cpp

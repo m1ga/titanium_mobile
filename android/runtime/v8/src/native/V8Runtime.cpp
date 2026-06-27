@@ -106,6 +106,27 @@ void V8Runtime::bootstrap(Local<Context> context)
 	Isolate* isolate = context->GetIsolate();
 	EventEmitter::initTemplate(context);
 
+	// Register fast-path properties for the JSI C++ binding.
+	// These skip JNI on set/get and use a C++-authoritative property store.
+	// NOTE: In production, each proxy type's generated bindings should
+	// register their own fast properties. Here we register common ones
+	// for testing and for proxy types that don't have custom bindings.
+	Proxy::registerFastProperty("text");
+	Proxy::registerFastProperty("color");
+	Proxy::registerFastProperty("fontSize");
+	Proxy::registerFastProperty("title");
+	Proxy::registerFastProperty("value");
+	Proxy::registerFastProperty("enabled");
+	Proxy::registerFastProperty("visible");
+	Proxy::registerFastProperty("opacity");
+	Proxy::registerFastProperty("width");
+	Proxy::registerFastProperty("height");
+	Proxy::registerFastProperty("top");
+	Proxy::registerFastProperty("left");
+	Proxy::registerFastProperty("right");
+	Proxy::registerFastProperty("bottom");
+	Proxy::registerFastProperty("zIndex");
+
 	Local<Object> kroll = Object::New(isolate);
 	krollGlobalObject.Reset(isolate, kroll);
 
@@ -385,6 +406,9 @@ JNIEXPORT jobject JNICALL Java_org_appcelerator_kroll_runtime_v8_V8Runtime_nativ
 
 JNIEXPORT jboolean JNICALL Java_org_appcelerator_kroll_runtime_v8_V8Runtime_nativeIdle(JNIEnv *env, jobject self)
 {
+	Isolate* isolate = V8Runtime::v8_isolate;
+	v8::HandleScope scope(isolate);
+
 	// If we're closing up shop, return true, which is equivalent to V8 GC saying there's no more work to do
 	//if (V8Runtime::disposed) {
 	//	return true;
@@ -393,6 +417,11 @@ JNIEXPORT jboolean JNICALL Java_org_appcelerator_kroll_runtime_v8_V8Runtime_nati
 	// TODO Pump the message loop/queues until it's empty?
 	// while (v8::platform::PumpMessageLoop(V8Runtime::platform, V8Runtime:v8_isolate)) continue;
 	// v8::platform::RunIdleTasks(g_platform, isolate, 50.0 / base::Time::kMillisecondsPerSecond);
+
+	// Flush any pending fast-property changes to Java.
+	if (titanium::Proxy::hasDirtyProxies()) {
+		titanium::Proxy::flushAllDirtyProxies(env);
+	}
 
 	// notify V8 of low memory to suggest a full GC
 	V8Runtime::v8_isolate->LowMemoryNotification();

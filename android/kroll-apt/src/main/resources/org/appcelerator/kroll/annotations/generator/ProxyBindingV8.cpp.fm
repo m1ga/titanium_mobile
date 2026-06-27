@@ -11,6 +11,7 @@
 #include "${packageName}.${proxyClassName}.h"
 
 #include "JSException.h"
+#include "Proxy.h"
 #include "TypeConverter.h"
 
 <#if isModule>
@@ -341,6 +342,20 @@ void ${className}::setter_${name}(Local<Name> property, Local<Value> value, cons
 {
 	Isolate* isolate = args.GetIsolate();
 	HandleScope scope(isolate);
+
+	// ── Fast property path (JSI C++ binding) ─────────────────────────
+	// For registered fast properties, store in C++ with 0 JNI calls.
+	// The V8Runtime::nativeIdle callback flushes dirty proxies to Java.
+	if (titanium::Proxy::isFastProperty("${name}")) {
+		<@Proxy.getHolder/>
+		titanium::Proxy* proxy = NativeObject::Unwrap<titanium::Proxy>(holder);
+		if (proxy) {
+			proxy->fastProperties().set("${name}", value);
+			proxy->fastProperties().markDirty("${name}");
+			titanium::Proxy::markProxyDirty(proxy);
+		}
+		return;
+	}
 
 	JNIEnv *env = titanium::JNIScope::getEnv();
 	if (!env) {
